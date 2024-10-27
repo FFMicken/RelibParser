@@ -15,11 +15,12 @@ class WebDriverManager:
         options.add_argument('--disable-blink-features=AutomationControlled')
         options.add_argument(f'user-agent={ua.random}')
         options.add_argument("--disable-extensions")
-        options.add_argument("--disable-javascript")
+        # options.add_argument("--disable-javascript")
         options.add_argument("--log-level=3")
         options.add_argument("--no-sandbox")
         options.page_load_strategy = 'eager'
-        options.add_experimental_option("excludeSwitches", ["enable-logging"])
+        options.add_experimental_option("excludeSwitches", ["enable-automation", "enable-logging"])
+        options.add_experimental_option('useAutomationExtension', False)
         # options.add_argument('--headless')
 
         driver = webdriver.Chrome(options=options)
@@ -37,7 +38,6 @@ class WebDriverManager:
         except Exception as e:
             print(f"Ошибка при закрытии драйвера: {e}")
 
-    # Выбор продолжить или выйти
     def next_or_exit(self):
         if self.__driver and self.__driver.service.process:
             self.close_driver()
