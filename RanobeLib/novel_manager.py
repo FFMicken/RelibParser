@@ -1,3 +1,5 @@
+import time
+
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -20,15 +22,14 @@ class NovelManager:
 
     def open_project_or_chapters(self, project):
         if project.volume is None and project.chapter is None:
+            self.saveBookInfo(project)
             self.open_first_chapter(project)
         else:
             url_template = f"https://ranobelib.me/ru/{project.project_id}--{project.original_name_project}/read/v{project.volume}/c{project.chapter}"
             self.save_chapters(project, url_template)
 
-    def open_first_chapter(self, project):
-        url_template = f"https://ranobelib.me/ru/book/{project.project_id}--{project.original_name_project}?section=info"
-        self.__driver.get(url_template)
 
+    def open_first_chapter(self, project):
         try:
             if project.is_special:
                 self.html_code = self.__driver.page_source
@@ -48,6 +49,18 @@ class NovelManager:
         except Exception as e:
             self.log_error('project_opening_error', e)
 
+    def saveBookInfo(self, project):
+        url_template = f"https://ranobelib.me/ru/book/{project.project_id}--{project.original_name_project}?section=info"
+        self.__driver.get(url_template)
+
+        try:
+            WebDriverWait(self.__driver, self.timeout).until(EC.presence_of_element_located((By.TAG_NAME, 'body')))
+
+            self.__document_manager
+            
+        except Exception as e:
+            self.log_error('project_opening_error', e)
+        
     def save_chapters(self, project, url_template):
         while True:
             try:

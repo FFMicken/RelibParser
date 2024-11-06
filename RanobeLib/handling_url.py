@@ -10,17 +10,15 @@ class UrlCreate:
         self.msg_manager = msg_manager
 
     def give_project(self):
+        self.project_id, self.original_name_project, self.volume, self.chapter = self.parse_url(self.project_url)
+
         if not self.is_valid_url(self.project_url):
             self.msg_manager.show_message('invalid_url')
-            return
-            
-        result = self.parse_url(self.project_url)
+            return    
         
-        if result == (None, None, None, None):
+        if self.project_id and self.original_name_project and self.volume and self.chapter == None:
             self.msg_manager.show_message('invalid_url')
             return
-
-        self.project_id, self.original_name_project, self.volume, self.chapter = self.parse_url(self.project_url)
 
         self.name_project = self.format_project_name(self.original_name_project)
 
@@ -34,6 +32,7 @@ class UrlCreate:
         return name.replace('-', ' ').title()
 
     def parse_url(self, url: str):
+        print('1')
         url = self.clean_url(url)
 
         project_pattern = r"https://ranobelib.me/ru/book/(\d+)--([a-zA-Z0-9\-]+)"
@@ -50,6 +49,7 @@ class UrlCreate:
         return None, None, None, None
 
     def clean_url(self, url: str):
+        print('2')
         url = self.check_special_symbol(url)
         return url.split('?')[0]
 
@@ -71,6 +71,7 @@ class UrlCreate:
             return False
 
     def check_special_symbol(self, url: str):
+        print('3')
         special_symbol = '$'
         if url.startswith(special_symbol + ' '):
             self.is_special = True

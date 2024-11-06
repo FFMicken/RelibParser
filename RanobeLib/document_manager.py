@@ -30,9 +30,8 @@ class DocumentManager:
 
         self.msg_manager.show_message('html_chapter_saved', chapter)
 
-    def save_info_and_nomber(self):
-        return 0
-
+    def save_info_and_nomber(self, driver, project):
+        WebDriverWait(driver, 50).until(EC.presence_of_element_located((By.TAG_NAME, 'p')))
 
     def save_chapter(self, chapter, driver, project):
 
