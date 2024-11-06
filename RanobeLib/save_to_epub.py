@@ -29,4 +29,5 @@ def save_document_to_EPUB(self):
         epub.write_epub(epub_file_path, book)
         self.msg_manager.show_message('all_chapters_are_saved_to', epub_file_path)
     except Exception as e:
-        print(f"Ошибка при сохранении в EPUB: {e}")
+        self.msg_manager.show_message('all_chapters_are_saved_to', epub_file_path)
+        print('error_saving_to_EPUB: ', {e})

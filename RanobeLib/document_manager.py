@@ -30,6 +30,10 @@ class DocumentManager:
 
         self.msg_manager.show_message('html_chapter_saved', chapter)
 
+    def save_info_and_nomber(self):
+        return 0
+
+
     def save_chapter(self, chapter, driver, project):
 
         WebDriverWait(driver, 50).until(EC.presence_of_element_located((By.TAG_NAME, 'p')))
@@ -66,4 +70,4 @@ class DocumentManager:
                 elif format == '4':
                     save_document_to_EPUB(self)
             except Exception as e:
-                self.msg_manager.show_message(f'Ошибка при сохранении в формате {format}: {str(e)}')
+                self.msg_manager.show_message('error_saving_in_format', {format}, {str(e)})

@@ -24,6 +24,9 @@ class MessageManager:
             'project_opening_error':        'Произошла ошибка при открытии проекта: {}',
             'folder_creation_error':        'Ошибка при создании папки: {}',
             'chapter_already_saved':        'Глава {} уже сохранена',
+            'chapter_does_not_text':       'Глава {} не содержит текста.',
+            'error_saving_in_format':       'Ошибка при сохранении в формате {}: {}',
+            'error_saving_to_EPUB: ':       'Ошибка при сохранении в EPUB: {}',
             'all_chapters_are_saved_to':    'Все главы сохранены в файл: {}',
             'current_volume_and_chapter':   'Текущий том: {}, Текущая глава: {}',
         }
