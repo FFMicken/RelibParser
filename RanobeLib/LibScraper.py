@@ -10,13 +10,7 @@ def main():
         
         msg_manager.show_message('start', inline=True)
 
-        project_url = input("")
-
-        msg_manager.show_message('select_formats')
-
-        user_input = input()
-
-        formats = user_input.split()
+        project_url = input()
         
         try:
             project = UrlCreate(project_url, msg_manager)
@@ -29,6 +23,10 @@ def main():
         except ValueError:
             msg_manager.show_message('invalid_url')
             continue
+        
+        msg_manager.show_message('select_formats')
+
+        formats = input().split()
         
         web_driver_manager = WebDriverManager(msg_manager)
 

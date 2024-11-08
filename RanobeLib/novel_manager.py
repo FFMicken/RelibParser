@@ -1,5 +1,3 @@
-import time
-
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -11,14 +9,11 @@ class NovelManager:
         self.msg_manager = msg_manager
         self.html_code = None
         self.timeout = 50
+        self.saved_chapters = {}
 
     def click_element(self, by, value):
         element = WebDriverWait(self.__driver, self.timeout).until(EC.element_to_be_clickable((by, value)))
         self.__driver.execute_script("arguments[0].click();", element)
-
-    def save_html(self, filename):
-        with open(filename, "w", encoding="utf-8") as file:
-            file.write(self.html_code)
 
     def open_project_or_chapters(self, project):
         if project.volume is None and project.chapter is None:
@@ -28,12 +23,11 @@ class NovelManager:
             url_template = f"https://ranobelib.me/ru/{project.project_id}--{project.original_name_project}/read/v{project.volume}/c{project.chapter}"
             self.save_chapters(project, url_template)
 
-
     def open_first_chapter(self, project):
+        print('Открываю первую главу')
         try:
             if project.is_special:
                 self.html_code = self.__driver.page_source
-                self.save_html("project_page.html")
 
             project_link = f"/ru/{project.project_id}--{project.original_name_project}/read/v01/c01"
             self.click_element(By.XPATH, f"//a[@href='{project_link}' and contains(@class, 'btn') and contains(@class, 'is-filled') and contains(@class, 'variant-primary')]")
@@ -41,6 +35,8 @@ class NovelManager:
             WebDriverWait(self.__driver, self.timeout).until(EC.presence_of_element_located((By.TAG_NAME, 'h1')))
             
             url_template = self.__driver.current_url
+
+            print('1 url_template: ', url_template)
 
             project.project_id, project.original_name_project, project.volume, project.chapter = project.parse_url(url_template)
 
@@ -50,22 +46,32 @@ class NovelManager:
             self.log_error('project_opening_error', e)
 
     def saveBookInfo(self, project):
+        print('Открываю инфу о проекте')
+
         url_template = f"https://ranobelib.me/ru/book/{project.project_id}--{project.original_name_project}?section=info"
+        
         self.__driver.get(url_template)
 
-        try:
-            WebDriverWait(self.__driver, self.timeout).until(EC.presence_of_element_located((By.TAG_NAME, 'body')))
+        print('0 url_template: ', url_template)
 
-            self.__document_manager
+        try:
+            self.__document_manager.save_info_and_nomber(self.__driver, project)
             
         except Exception as e:
             self.log_error('project_opening_error', e)
         
     def save_chapters(self, project, url_template):
-        while True:
-            try:
-                WebDriverWait(self.__driver, self.timeout).until(EC.presence_of_element_located((By.TAG_NAME, 'body')))
 
+        print('1')
+        print('открываю 2ю главу и дальше')
+        print('2 url_template: ', url_template)
+
+        while True:
+            print('2')
+            print('chapter: ', project.chapter)
+            print('3 url_template: ', url_template)
+
+            try:
                 if "404" in self.__driver.current_url:
                     self.msg_manager.show_message('error_404', url_template)
                     break
@@ -77,9 +83,13 @@ class NovelManager:
                         break
                     continue
 
-                self.msg_manager.show_message('current_volume_and_chapter', project.volume, project.chapter)
-                
+                print('Сохраняю: ', project.chapter)
+
                 self.__document_manager.save_chapter(project.chapter, self.__driver, project)
+
+                self.msg_manager.show_message('current_volume_and_chapter', project.volume, project.chapter)
+
+                self.add_chapter_in_dict(project)                
 
                 if not self.navigate_to_next_page("//span[text()='Вперёд']", project):
                     break
@@ -90,8 +100,17 @@ class NovelManager:
 
         self.__document_manager.save_document()
 
+    def add_chapter_in_dict(self, project):
+        if project.volume not in self.saved_chapters:
+                self.saved_chapters[project.volume] = []
+        if project.chapter not in self.saved_chapters[project.volume]:
+                self.saved_chapters[project.volume].append(project.chapter)
+
+        print('Сохранил: ', project.chapter)
+        print('saved_chapters: ', self.saved_chapters)
+
     def is_chapter_saved(self, volume, chapter):
-        return volume in self.__document_manager.saved_chapters and chapter in self.__document_manager.saved_chapters[volume]
+        return volume in self.saved_chapters and chapter in self.saved_chapters[volume]
 
     def navigate_to_next_page(self, xpath, project):
         buttons = self.__driver.find_elements(By.XPATH, xpath)

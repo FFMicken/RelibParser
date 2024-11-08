@@ -15,26 +15,33 @@ class DocumentManager:
         self.project_dir = project_dir
         self.name_project = name_project
         self.msg_manager = msg_manager
-        self.saved_chapters = {}
         self.formats = formats
-        self.chapters_buffer = [] 
-    
-    def get_saved_chapters(self):
-        return self.saved_chapters
+        self.chapters_buffer = []
 
-    def save_html(self, page_source, volume, chapter, project_dir):
-        html_file_path = os.path.join(project_dir, f"volume_{volume}_chapter_{chapter}.html")
+    def save_html(self, soup, volume, chapter, project_dir, caller):
+        
+        
+        if caller == "save_info_and_nomber":
+            html_file_path = os.path.join(project_dir, "title_info.html")
+        else:
+            html_file_path = os.path.join(project_dir, f"volume_{volume}_chapter_{chapter}.html")
         
         with open(html_file_path, 'w', encoding='utf-8') as file:
-            file.write(page_source)
+            file.write(soup.prettify())
 
-        self.msg_manager.show_message('html_chapter_saved', chapter)
+        self.msg_manager.show_message('html_chapter_saved', chapter if caller != "save_info_and_nomber" else "title_info")
 
     def save_info_and_nomber(self, driver, project):
-        WebDriverWait(driver, 50).until(EC.presence_of_element_located((By.TAG_NAME, 'p')))
+        WebDriverWait(driver, 50).until(EC.presence_of_element_located((By.TAG_NAME, 'h1')))
+        
+        page_source = driver.page_source
+
+        soup = BeautifulSoup(page_source, 'html.parser')
+
+        if project.is_special:
+            self.save_html(soup, volume=None, chapter=None, project_dir=self.project_dir, caller="save_info_and_nomber")
 
     def save_chapter(self, chapter, driver, project):
-
         WebDriverWait(driver, 50).until(EC.presence_of_element_located((By.TAG_NAME, 'p')))
 
         page_source = driver.page_source
@@ -42,7 +49,7 @@ class DocumentManager:
         soup = BeautifulSoup(page_source, 'html.parser')
 
         if project.is_special:
-            self.save_html(page_source, project.volume, project.chapter, project.project_dir)
+            self.save_html(soup, volume=project.volume, chapter=chapter, project_dir=self.project_dir, caller="save_chapter")
 
         header_h1 = soup.find_all('h1')
         header_p = soup.find_all('p')
@@ -51,11 +58,6 @@ class DocumentManager:
         chapter_title = h1_texts[0] if h1_texts else f"Глава {chapter}"
 
         self.chapters_buffer.append((chapter_title, header_p))
-
-        if project.volume not in self.saved_chapters:
-            self.saved_chapters[project.volume] = []
-        if chapter not in self.saved_chapters[project.volume]:
-            self.saved_chapters[project.volume].append(chapter)
 
     def save_document(self):
         for format in self.formats:

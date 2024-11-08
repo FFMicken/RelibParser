@@ -21,10 +21,11 @@ class MessageManager:
             'html_chapter_saved':           'HTML код главы {} сохранен.',
             'folder_already_creat':         'Папка для проекта уже существует.',
             'special_symbol_found':         'Спец символ найден.',
+            'special symbol found':         'Спецсимвол найден',
             'project_opening_error':        'Произошла ошибка при открытии проекта: {}',
             'folder_creation_error':        'Ошибка при создании папки: {}',
             'chapter_already_saved':        'Глава {} уже сохранена.',
-            'chapter_does_not_text':       'Глава {} не содержит текста.',
+            'chapter_does_not_text':        'Глава {} не содержит текста.',
             'error_saving_in_format':       'Ошибка при сохранении в формате {}: {}',
             'error_saving_to_EPUB: ':       'Ошибка при сохранении в EPUB: {}',
             'all_chapters_are_saved_to':    'Все главы сохранены в файл: {}',
@@ -33,7 +34,7 @@ class MessageManager:
 
     def show_message(self, message_key, *format_args, inline=False):
         message = self.messages.get(message_key, "Неизвестное сообщение")
-        
+            
         if format_args:
             message = message.format(*format_args)
         
