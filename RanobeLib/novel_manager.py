@@ -2,6 +2,8 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
+import time
+
 class NovelManager:
     def __init__(self, driver, document_manager, msg_manager):
         self.__driver = driver
@@ -10,35 +12,31 @@ class NovelManager:
         self.html_code = None
         self.timeout = 50
         self.saved_chapters = {}
-
-    def click_element(self, by, value):
-        element = WebDriverWait(self.__driver, self.timeout).until(EC.element_to_be_clickable((by, value)))
-        self.__driver.execute_script("arguments[0].click();", element)
+        self.url_template = None
 
     def open_project_or_chapters(self, project):
         if project.volume is None and project.chapter is None:
             self.saveBookInfo(project)
             self.open_first_chapter(project)
         else:
-            url_template = f"https://ranobelib.me/ru/{project.project_id}--{project.original_name_project}/read/v{project.volume}/c{project.chapter}"
-            self.save_chapters(project, url_template)
+            self.save_chapters(project)
 
     def open_first_chapter(self, project):
-        print('Открываю первую главу')
         try:
             if project.is_special:
                 self.html_code = self.__driver.page_source
 
-            project_link = f"/ru/{project.project_id}--{project.original_name_project}/read/v01/c01"
-            self.click_element(By.XPATH, f"//a[@href='{project_link}' and contains(@class, 'btn') and contains(@class, 'is-filled') and contains(@class, 'variant-primary')]")
+            self.click_element(By.XPATH, "//span[@class='ox_hy' and @data-bookmark='false']")
 
             WebDriverWait(self.__driver, self.timeout).until(EC.presence_of_element_located((By.TAG_NAME, 'h1')))
             
-            url_template = self.__driver.current_url
+            self.url_template = self.__driver.current_url
 
-            print('1 url_template: ', url_template)
+            project.project_id, project.original_name_project, project.volume, project.chapter = project.parse_url(self.url_template)
 
-            project.project_id, project.original_name_project, project.volume, project.chapter = project.parse_url(url_template)
+            self.__document_manager.save_chapter(project.chapter, self.__driver, project)
+            
+            self.add_chapter_in_dict(project)
 
             self.open_project_or_chapters(project)
             
@@ -46,59 +44,15 @@ class NovelManager:
             self.log_error('project_opening_error', e)
 
     def saveBookInfo(self, project):
-        print('Открываю инфу о проекте')
-
-        url_template = f"https://ranobelib.me/ru/book/{project.project_id}--{project.original_name_project}?section=info"
+        self.url_template = f"https://ranobelib.me/ru/book/{project.project_id}--{project.original_name_project}?section=info"
         
-        self.__driver.get(url_template)
-
-        print('0 url_template: ', url_template)
+        self.__driver.get(self.url_template)
 
         try:
             self.__document_manager.save_info_and_nomber(self.__driver, project)
             
         except Exception as e:
             self.log_error('project_opening_error', e)
-        
-    def save_chapters(self, project, url_template):
-
-        print('1')
-        print('открываю 2ю главу и дальше')
-        print('2 url_template: ', url_template)
-
-        while True:
-            print('2')
-            print('chapter: ', project.chapter)
-            print('3 url_template: ', url_template)
-
-            try:
-                if "404" in self.__driver.current_url:
-                    self.msg_manager.show_message('error_404', url_template)
-                    break
-
-                self.update_project_info(project)
-
-                if self.is_chapter_saved(project.volume, project.chapter):
-                    if not self.navigate_to_next_page("//span[text()='Вперёд']", project):
-                        break
-                    continue
-
-                print('Сохраняю: ', project.chapter)
-
-                self.__document_manager.save_chapter(project.chapter, self.__driver, project)
-
-                self.msg_manager.show_message('current_volume_and_chapter', project.volume, project.chapter)
-
-                self.add_chapter_in_dict(project)                
-
-                if not self.navigate_to_next_page("//span[text()='Вперёд']", project):
-                    break
-
-            except Exception as e:
-                self.log_error('there_was_an_error', e)
-                break
-
-        self.__document_manager.save_document()
 
     def add_chapter_in_dict(self, project):
         if project.volume not in self.saved_chapters:
@@ -106,11 +60,9 @@ class NovelManager:
         if project.chapter not in self.saved_chapters[project.volume]:
                 self.saved_chapters[project.volume].append(project.chapter)
 
-        print('Сохранил: ', project.chapter)
-        print('saved_chapters: ', self.saved_chapters)
-
-    def is_chapter_saved(self, volume, chapter):
-        return volume in self.saved_chapters and chapter in self.saved_chapters[volume]
+    def click_element(self, by, value):
+        element = WebDriverWait(self.__driver, self.timeout).until(EC.element_to_be_clickable((by, value)))
+        self.__driver.execute_script("arguments[0].click();", element)
 
     def navigate_to_next_page(self, xpath, project):
         buttons = self.__driver.find_elements(By.XPATH, xpath)
@@ -121,11 +73,43 @@ class NovelManager:
         return False
     
     def update_project_info(self, project):
-        url_template = self.__driver.current_url
-        match = project.check_chapter_and_volume(url_template)
+        self.url_template = self.__driver.current_url
+        match = project.check_chapter_and_volume(self.url_template)
         if match:
             project.volume = match.group(1)
             project.chapter = match.group(2)
 
-    def log_error(self, error_type, exception):
-        self.msg_manager.show_message(error_type, exception)
+    def save_chapters(self, project):
+        next_button_xpath = "//span[text()='Вперёд']"
+        
+        while True:
+            try:
+                if self.navigate_to_next_page(next_button_xpath, project):
+                    WebDriverWait(self.__driver, self.timeout).until(EC.presence_of_element_located((By.TAG_NAME, 'body')))
+                    WebDriverWait(self.__driver, self.timeout).until(EC.presence_of_element_located((By.TAG_NAME, 'h1')))
+                    WebDriverWait(self.__driver, self.timeout).until(EC.presence_of_element_located((By.TAG_NAME, 'p')))
+
+                    time.sleep(0.1)
+
+                    if "404" in self.__driver.current_url:
+                        self.msg_manager.show_message('error_404', self.url_template)
+                        break
+
+                    self.update_project_info(project)
+
+                    if project.chapter in self.saved_chapters.get(project.volume, []):
+                        self.update_project_info(project)
+                        continue
+
+                    self.__document_manager.save_chapter(project.chapter, self.__driver, project)
+                    self.add_chapter_in_dict(project)
+
+                elif not self.navigate_to_next_page(next_button_xpath, project):
+                    break
+
+            except Exception as e:
+                self.msg_manager.show_message('there_was_an_error', e)
+                break
+
+        self.__document_manager.save_document()
+        self.saved_chapters.clear()

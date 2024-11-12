@@ -18,10 +18,11 @@ class WebDriverManager:
         options.add_argument("--disable-javascript")
         options.add_argument("--log-level=3")
         options.add_argument("--no-sandbox")
+        # options.add_argument('--headless')
         options.page_load_strategy = 'eager'
-        options.add_experimental_option("excludeSwitches", ["enable-automation", "enable-logging"])
+        options.add_experimental_option("excludeSwitches", ["enable-logging", "enable-automation"])
         options.add_experimental_option('useAutomationExtension', False)
-        options.add_argument('--headless')
+        options.add_argument("--remote-debugging-port=0")
 
         driver = webdriver.Chrome(options=options)
         driver.set_window_size(640, 480)

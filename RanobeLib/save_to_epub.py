@@ -1,33 +1,41 @@
 import os
+import zipfile
+from bs4 import BeautifulSoup
 
-from ebooklib import epub
-
-def save_document_to_EPUB(self):
-    epub_file_path = os.path.join(self.project_dir, f"{self.name_project}.epub")
-    book = epub.EpubBook()
-    book.set_title(self.name_project)
-    book.set_language('ru')
-
+def save_document_to_epub(self):
     try:
-        for chapter_index, (chapter_title, header_p) in enumerate(self.chapters_buffer):
-            chapter = epub.EpubHtml(title=chapter_title, file_name=f'chapter_{chapter_index}.xhtml', lang='ru')
-            all_text = '\n'.join([p.get_text(strip=True) for p in header_p if p.get_text(strip=True)])
-            cleaned_text = '\n'.join([line.strip() for line in all_text.splitlines() if line.strip()])
+        epub_file_path = os.path.join(self.project_dir, f"{self.name_project}.epub")
+        
+        # Проверка на наличие файла и создание нового, если отсутствует
+        if not os.path.exists(epub_file_path):
+            with zipfile.ZipFile(epub_file_path, 'w') as epub:
+                epub.writestr("mimetype", "application/epub+zip")
+            temp_files = {}
+        else:
+            with zipfile.ZipFile(epub_file_path, 'r') as epub:
+                temp_files = {name: epub.read(name) for name in epub.namelist()}
 
-            chapter.content = f"<h1>{chapter_title}</h1><p>{cleaned_text.replace('\n', '</p><p>')}</p>"
+        # Подготовка заголовка и основного текста
+        title_paragraph = f"<h1>{self.chapter_title}</h1>"
+        main_text = '\n'.join([p.get_text(strip=True) for p in self.header_p if p.get_text(strip=True)])
+        content_html = f"{title_paragraph}\n<p>{main_text}</p>"
 
-            book.add_item(chapter)
-            book.spine.append(chapter)
+        # Поиск основного контента для обновления или добавления
+        content_file = "OEBPS/Text/chapter.xhtml"
+        if content_file in temp_files:
+            soup = BeautifulSoup(temp_files[content_file], 'html.parser')
+            soup.body.append(BeautifulSoup(content_html, 'html.parser'))
+            temp_files[content_file] = str(soup).encode('utf-8')
+        else:
+            soup = BeautifulSoup(f"<html><body>{content_html}</body></html>", 'html.parser')
+            temp_files[content_file] = str(soup).encode('utf-8')
 
-        book.add_item(epub.EpubNcx())
-        book.add_item(epub.EpubNav())
+        # Запись в новый epub файл
+        with zipfile.ZipFile(epub_file_path, 'w') as epub:
+            for name, content in temp_files.items():
+                epub.writestr(name, content)
 
-        style = 'BODY {color: black;}'
-        nav_css = epub.EpubItem(uid="style_nav", file_name="style/nav.css", media_type="text/css", content=style)
-        book.add_item(nav_css)
+        return epub_file_path
 
-        epub.write_epub(epub_file_path, book)
-        self.msg_manager.show_message('all_chapters_are_saved_to', epub_file_path)
     except Exception as e:
-        self.msg_manager.show_message('all_chapters_are_saved_to', epub_file_path)
-        print('error_saving_to_EPUB: ', {e})
+        self.msg_manager.show_message('there_was_an_error', e)
