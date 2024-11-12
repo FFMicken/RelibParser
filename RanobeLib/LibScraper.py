@@ -4,6 +4,8 @@ from message_manager import MessageManager
 from document_manager import DocumentManager
 from web_driver_manager import WebDriverManager
 
+import time
+
 def main():
     while True:
         msg_manager = MessageManager()
@@ -38,6 +40,12 @@ def main():
 
         if not web_driver_manager.next_or_exit():
             exit()
+            end_time = time.time()
+
+            execution_time = (end_time - start_time)
+
+            print('Время работы: ', execution_time)
 
 if __name__ == '__main__':
+    start_time = time.time()
     main()

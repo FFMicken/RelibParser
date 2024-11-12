@@ -67,6 +67,8 @@ class DocumentManager:
                 self.msg_manager.show_message('error_saving_in_format', format, str(e))
 
         self.msg_manager.show_message('current_volume_and_chapter', project.volume, project.chapter)
+        
+        return True
 
     def save_document(self):
         self.msg_manager.show_message('all_chapters_are_saved_to', self.project_dir)

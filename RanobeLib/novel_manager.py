@@ -19,6 +19,7 @@ class NovelManager:
             self.saveBookInfo(project)
             self.open_first_chapter(project)
         else:
+            self.continue_save(project)
             self.save_chapters(project)
 
     def open_first_chapter(self, project):
@@ -26,7 +27,7 @@ class NovelManager:
             if project.is_special:
                 self.html_code = self.__driver.page_source
 
-            self.click_element(By.XPATH, "//span[@class='ox_hy' and @data-bookmark='false']")
+            self.click_element(By.XPATH, "//span[@data-bookmark='false']")
 
             WebDriverWait(self.__driver, self.timeout).until(EC.presence_of_element_located((By.TAG_NAME, 'h1')))
             
@@ -53,6 +54,9 @@ class NovelManager:
             
         except Exception as e:
             self.log_error('project_opening_error', e)
+
+    def continue_save(self, project):
+        self.__driver.get(project.project_url)
 
     def add_chapter_in_dict(self, project):
         if project.volume not in self.saved_chapters:
@@ -81,31 +85,45 @@ class NovelManager:
 
     def save_chapters(self, project):
         next_button_xpath = "//span[text()='Вперёд']"
-        
+    
         while True:
             try:
-                if self.navigate_to_next_page(next_button_xpath, project):
-                    WebDriverWait(self.__driver, self.timeout).until(EC.presence_of_element_located((By.TAG_NAME, 'body')))
-                    WebDriverWait(self.__driver, self.timeout).until(EC.presence_of_element_located((By.TAG_NAME, 'h1')))
-                    WebDriverWait(self.__driver, self.timeout).until(EC.presence_of_element_located((By.TAG_NAME, 'p')))
+                start_time = time.time()
 
-                    time.sleep(0.1)
+                # if self.navigate_to_next_page(next_button_xpath, project):
+                WebDriverWait(self.__driver, self.timeout).until(EC.presence_of_element_located((By.TAG_NAME, 'body')))
+                WebDriverWait(self.__driver, self.timeout).until(EC.presence_of_element_located((By.TAG_NAME, 'h1')))
+                WebDriverWait(self.__driver, self.timeout).until(EC.presence_of_element_located((By.TAG_NAME, 'p')))
 
-                    if "404" in self.__driver.current_url:
-                        self.msg_manager.show_message('error_404', self.url_template)
-                        break
+                time.sleep(0.1)
 
-                    self.update_project_info(project)
-
-                    if project.chapter in self.saved_chapters.get(project.volume, []):
-                        self.update_project_info(project)
-                        continue
-
-                    self.__document_manager.save_chapter(project.chapter, self.__driver, project)
-                    self.add_chapter_in_dict(project)
-
-                elif not self.navigate_to_next_page(next_button_xpath, project):
+                if self.__driver.current_url == "https://ranobelib.me/404":
+                    self.msg_manager.show_message('error_404', self.url_template)
                     break
+
+                self.update_project_info(project)
+
+                if project.chapter in self.saved_chapters.get(project.volume, []):
+                    self.update_project_info(project)
+                    continue
+                
+                start_time_1 = time.time()
+                if self.__document_manager.save_chapter(project.chapter, self.__driver, project):
+                    self.add_chapter_in_dict(project)
+                end_time_1 = time.time()
+
+                end_time = time.time()
+                
+                execution_time_1 = (end_time_1 - start_time_1)
+
+                execution_time = (end_time - start_time) - execution_time_1
+                
+                self.msg_manager.show_message('time_save', execution_time_1)
+
+                self.msg_manager.show_message('time_spent', execution_time)
+
+                # elif not self.navigate_to_next_page(next_button_xpath, project):
+                #     break
 
             except Exception as e:
                 self.msg_manager.show_message('there_was_an_error', e)

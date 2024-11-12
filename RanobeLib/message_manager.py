@@ -22,6 +22,8 @@ class MessageManager:
             'current_volume_and_chapter':   'Текущий том: {}, Текущая глава: {}',
 
             'chapter_does_not_text':        'Глава {} не содержит текста.',
+            'time_job': 'Время на переход на след главу: {:.2f} секунд.',
+            'time_save': 'Время на сохранение главы: {:.2f} секунд.',
 
         }
 
