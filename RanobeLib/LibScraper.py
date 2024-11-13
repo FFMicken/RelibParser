@@ -46,6 +46,8 @@ def main():
 
             print('Время работы: ', execution_time)
 
+        i = input()
+
 if __name__ == '__main__':
     start_time = time.time()
     main()

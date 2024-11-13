@@ -30,16 +30,12 @@ class NovelManager:
             self.click_element(By.XPATH, "//span[@data-bookmark='false']")
 
             WebDriverWait(self.__driver, self.timeout).until(EC.presence_of_element_located((By.TAG_NAME, 'h1')))
-            
+
             self.url_template = self.__driver.current_url
 
-            project.project_id, project.original_name_project, project.volume, project.chapter = project.parse_url(self.url_template)
+            self.save_start_chapter(project)
 
-            self.__document_manager.save_chapter(project.chapter, self.__driver, project)
-            
-            self.add_chapter_in_dict(project)
-
-            self.open_project_or_chapters(project)
+            self.save_chapters(project)
             
         except Exception as e:
             self.log_error('project_opening_error', e)
@@ -55,8 +51,20 @@ class NovelManager:
         except Exception as e:
             self.log_error('project_opening_error', e)
 
+    def save_start_chapter(self, project):
+
+        project.project_id, project.original_name_project, project.volume, project.chapter = project.parse_url(self.url_template)
+
+        self.__document_manager.save_chapter(project.chapter, self.__driver, project)
+
+        self.add_chapter_in_dict(project)
+
     def continue_save(self, project):
-        self.__driver.get(project.project_url)
+        self.url_template = project.project_url
+
+        self.__driver.get(self.url_template)
+
+        self.save_start_chapter(project)
 
     def add_chapter_in_dict(self, project):
         if project.volume not in self.saved_chapters:
@@ -85,45 +93,46 @@ class NovelManager:
 
     def save_chapters(self, project):
         next_button_xpath = "//span[text()='Вперёд']"
+
+        WebDriverWait(self.__driver, self.timeout).until(EC.presence_of_element_located((By.XPATH, next_button_xpath)))
     
         while True:
             try:
                 start_time = time.time()
 
-                # if self.navigate_to_next_page(next_button_xpath, project):
-                WebDriverWait(self.__driver, self.timeout).until(EC.presence_of_element_located((By.TAG_NAME, 'body')))
-                WebDriverWait(self.__driver, self.timeout).until(EC.presence_of_element_located((By.TAG_NAME, 'h1')))
-                WebDriverWait(self.__driver, self.timeout).until(EC.presence_of_element_located((By.TAG_NAME, 'p')))
+                if self.navigate_to_next_page(next_button_xpath, project):
+                    WebDriverWait(self.__driver, self.timeout).until(EC.presence_of_element_located((By.TAG_NAME, 'h1')))
+                    WebDriverWait(self.__driver, self.timeout).until(EC.presence_of_element_located((By.TAG_NAME, 'p')))
 
-                time.sleep(0.1)
+                    if self.__driver.current_url == "https://ranobelib.me/404":
+                        self.msg_manager.show_message('error_404', self.url_template)
+                        break
 
-                if self.__driver.current_url == "https://ranobelib.me/404":
-                    self.msg_manager.show_message('error_404', self.url_template)
-                    break
-
-                self.update_project_info(project)
-
-                if project.chapter in self.saved_chapters.get(project.volume, []):
                     self.update_project_info(project)
-                    continue
-                
-                start_time_1 = time.time()
-                if self.__document_manager.save_chapter(project.chapter, self.__driver, project):
-                    self.add_chapter_in_dict(project)
-                end_time_1 = time.time()
 
-                end_time = time.time()
-                
-                execution_time_1 = (end_time_1 - start_time_1)
+                    if project.chapter in self.saved_chapters.get(project.volume, []):
+                        self.update_project_info(project)
+                        continue
+                    
+                    start_time_1 = time.time()
 
-                execution_time = (end_time - start_time) - execution_time_1
-                
-                self.msg_manager.show_message('time_save', execution_time_1)
+                    if self.__document_manager.save_chapter(project.chapter, self.__driver, project):
+                        self.add_chapter_in_dict(project) 
+                    
+                    end_time_1 = time.time()
 
-                self.msg_manager.show_message('time_spent', execution_time)
+                    end_time = time.time()
+                    
+                    execution_time_1 = (end_time_1 - start_time_1)
 
-                # elif not self.navigate_to_next_page(next_button_xpath, project):
-                #     break
+                    execution_time = (end_time - start_time) - execution_time_1
+                    
+                    self.msg_manager.show_message('time_save', execution_time_1)
+
+                    self.msg_manager.show_message('time_job', execution_time)
+
+                elif not self.navigate_to_next_page(next_button_xpath, project):
+                    break
 
             except Exception as e:
                 self.msg_manager.show_message('there_was_an_error', e)

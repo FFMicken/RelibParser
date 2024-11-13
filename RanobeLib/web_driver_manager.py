@@ -1,24 +1,21 @@
-import os
 from selenium import webdriver
-from fake_useragent import UserAgent
+from selenium import webdriver
 
 class WebDriverManager:
     def __init__(self, msg_manager):
-        current_dir = os.path.dirname(os.path.abspath(__file__))
         self.__driver = self.__init_driver()
         self.msg_manager = msg_manager
 
     def __init_driver(self):
 
-        ua = UserAgent()
         options = webdriver.ChromeOptions()
         options.add_argument('--disable-blink-features=AutomationControlled')
-        options.add_argument(f'user-agent={ua.random}')
+        options.add_argument('user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36')
         options.add_argument("--disable-extensions")
         options.add_argument("--disable-javascript")
         options.add_argument("--log-level=3")
         options.add_argument("--no-sandbox")
-        # options.add_argument('--headless')
+        options.add_argument('--headless')
         options.page_load_strategy = 'eager'
         options.add_experimental_option("excludeSwitches", ["enable-logging", "enable-automation"])
         options.add_experimental_option('useAutomationExtension', False)
