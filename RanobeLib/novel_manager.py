@@ -2,8 +2,6 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
-import time
-
 class NovelManager:
     def __init__(self, driver, document_manager, msg_manager):
         self.__driver = driver
@@ -98,8 +96,6 @@ class NovelManager:
     
         while True:
             try:
-                start_time = time.time()
-
                 if self.navigate_to_next_page(next_button_xpath, project):
                     WebDriverWait(self.__driver, self.timeout).until(EC.presence_of_element_located((By.TAG_NAME, 'h1')))
                     WebDriverWait(self.__driver, self.timeout).until(EC.presence_of_element_located((By.TAG_NAME, 'p')))
@@ -113,23 +109,9 @@ class NovelManager:
                     if project.chapter in self.saved_chapters.get(project.volume, []):
                         self.update_project_info(project)
                         continue
-                    
-                    start_time_1 = time.time()
 
                     if self.__document_manager.save_chapter(project.chapter, self.__driver, project):
-                        self.add_chapter_in_dict(project) 
-                    
-                    end_time_1 = time.time()
-
-                    end_time = time.time()
-                    
-                    execution_time_1 = (end_time_1 - start_time_1)
-
-                    execution_time = (end_time - start_time) - execution_time_1
-                    
-                    self.msg_manager.show_message('time_save', execution_time_1)
-
-                    self.msg_manager.show_message('time_job', execution_time)
+                        self.add_chapter_in_dict(project)
 
                 elif not self.navigate_to_next_page(next_button_xpath, project):
                     break
@@ -137,6 +119,7 @@ class NovelManager:
             except Exception as e:
                 self.msg_manager.show_message('there_was_an_error', e)
                 break
-
+        
+        self.__document_manager.finalize()
         self.__document_manager.save_document()
         self.saved_chapters.clear()

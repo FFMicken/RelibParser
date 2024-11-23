@@ -4,8 +4,6 @@ from message_manager import MessageManager
 from document_manager import DocumentManager
 from web_driver_manager import WebDriverManager
 
-import time
-
 def main():
     while True:
         msg_manager = MessageManager()
@@ -14,16 +12,11 @@ def main():
 
         project_url = input()
         
-        try:
-            project = UrlCreate(project_url, msg_manager)
+        project = UrlCreate(project_url, msg_manager)
 
-            project.give_project()
+        project.give_project()
 
-            if not hasattr(project, 'name_project'):
-                continue
-
-        except ValueError:
-            msg_manager.show_message('invalid_url')
+        if not hasattr(project, 'name_project'):
             continue
         
         msg_manager.show_message('select_formats')
@@ -32,7 +25,7 @@ def main():
         
         web_driver_manager = WebDriverManager(msg_manager)
 
-        document_manager = DocumentManager(project.project_dir, project.name_project, msg_manager, formats)
+        document_manager = DocumentManager(project.current_dir, project.project_dir, project.name_project, msg_manager, formats)
         
         chapter_manager = NovelManager(web_driver_manager.get_driver(), document_manager, msg_manager)
 
@@ -40,14 +33,6 @@ def main():
 
         if not web_driver_manager.next_or_exit():
             exit()
-            end_time = time.time()
-
-            execution_time = (end_time - start_time)
-
-            print('Время работы: ', execution_time)
-
-        i = input()
 
 if __name__ == '__main__':
-    start_time = time.time()
     main()

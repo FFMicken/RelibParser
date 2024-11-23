@@ -6,6 +6,7 @@ class UrlCreate:
     def __init__(self, url, msg_manager):
         self.project_url = url
         self.project_dir = None
+        self.current_dir = None
         self.is_special = False
         self.msg_manager = msg_manager
 
@@ -53,8 +54,8 @@ class UrlCreate:
         self.project_url.split('?')[0]
 
     def create_dir(self) -> None:
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-        self.project_dir = os.path.join(current_dir, self.name_project)
+        self.current_dir = os.path.dirname(os.path.abspath(__file__))
+        self.project_dir = os.path.join(self.current_dir, self.name_project)
 
         if not self.safe_create_dir(self.project_dir):
             self.msg_manager.show_message('folder_already_creat')
@@ -74,7 +75,7 @@ class UrlCreate:
         if url.startswith(special_symbol + ' '):
             self.is_special = True
             url = url[2:]
-            self.msg_manager.show_message('special symbol found')
+            self.msg_manager.show_message('special_symbol_found')
         return url
 
     def check_chapter_and_volume(self, url_template):

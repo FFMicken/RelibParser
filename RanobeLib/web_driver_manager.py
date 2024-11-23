@@ -34,7 +34,7 @@ class WebDriverManager:
                 self.__driver.close()
                 self.__driver.quit()
         except Exception as e:
-            print(f"Ошибка при закрытии драйвера: {e}")
+            self.msg_manager.show_message('error_clos_driver', e)
 
     def next_or_exit(self):
         if self.__driver and self.__driver.service.process:
